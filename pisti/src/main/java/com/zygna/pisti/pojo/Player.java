@@ -10,13 +10,13 @@ public class Player {
 	protected final Table table;
 	private List<Card> cardsOnHand;
 	private int score;
-	private boolean isDealer;
+	private final boolean isADealer;
 	private int collectedCardsNo;
 	
-	public Player(Integer id,Table table,boolean isDealer){
+	public Player(Integer id,Table table,boolean isADealer){
 		this.id=id;
 		this.table=table;
-		this.isDealer=isDealer;
+		this.isADealer=isADealer;
 		this.cardsOnHand = new ArrayList<Card>();
 	}
 
@@ -36,12 +36,8 @@ public class Player {
 		this.score = score;
 	}
 
-	public boolean isDealer() {
-		return isDealer;
-	}
-
-	public void setDealer(boolean isDealer) {
-		this.isDealer = isDealer;
+	public boolean isADealer() {
+		return isADealer;
 	}
 
 	public int getCollectedCardsNo() {

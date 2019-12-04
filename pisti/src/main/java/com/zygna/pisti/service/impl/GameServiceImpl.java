@@ -37,10 +37,10 @@ public class GameServiceImpl implements GameService {
 		Player player3 = new Player(3, table, false);
 		Player dealer = new Player(4, table, true);
 		
-		new PlayerServiceImpl(player1, table, new Bot("boot-1", new DummyBotService()));
-		new PlayerServiceImpl(player2, table, new Bot("boot-2", new DummyBotService()));
-		new PlayerServiceImpl(player3, table, new Bot("boot-3", new DummyBotService()));
-		DealerService dealerService =  new DealerServiceImpl(dealer, table, new Bot("boot-4", new DummyBotService()));
+		new PlayerServiceImpl(player1, table, new Bot("dummy-bot-1", new DummyBotService()));
+		new PlayerServiceImpl(player2, table, new Bot("dummy-bot-2", new DummyBotService()));
+		new PlayerServiceImpl(player3, table, new Bot("dummy-bot-3", new DummyBotService()));
+		DealerService dealerService =  new DealerServiceImpl(dealer, table, new Bot("dummy-bot-4", new DummyBotService()));
 		
 		dealerService.startGame();
 		

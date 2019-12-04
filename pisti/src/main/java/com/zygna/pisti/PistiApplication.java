@@ -9,7 +9,7 @@ import org.springframework.context.ApplicationContext;
 import com.zygna.pisti.service.GameService;
 
 @SpringBootApplication
-public class PistiApplication implements CommandLineRunner{
+public class PistiApplication implements CommandLineRunner {
 	
 	@Autowired
 	private ApplicationContext applicationContext;
