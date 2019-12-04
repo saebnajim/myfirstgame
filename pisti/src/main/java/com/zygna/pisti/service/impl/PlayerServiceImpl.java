@@ -1,24 +1,24 @@
 package com.zygna.pisti.service.impl;
 
+import com.zygna.pisti.manager.TableManager;
 import com.zygna.pisti.pojo.Bot;
 import com.zygna.pisti.pojo.Card;
 import com.zygna.pisti.pojo.Player;
-import com.zygna.pisti.pojo.Table;
 import com.zygna.pisti.service.PlayerService;
 
 public class PlayerServiceImpl implements PlayerService {
 
 	private Player player;
-	protected final Table table;
+	protected TableManager tableManager;
 	private Bot bot;
 	
-	public PlayerServiceImpl(Player player,Table table,Bot bot){
+	public PlayerServiceImpl(Player player,TableManager tableManager,Bot bot){
 		this.player=player;
-		this.table=table;
+		this.tableManager=tableManager;
 		this.bot=bot;
 		
 		try {
-			this.table.addPlayerToTable(this);
+			this.tableManager.addPlayerToTable(this);
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
@@ -49,8 +49,8 @@ public class PlayerServiceImpl implements PlayerService {
 
 	@Override
 	public boolean play(){
-		Card card = bot.getBotService().getSuitableCard(player.getCardsOnHand(), table.getLastDiscardedCard());
-		table.discardedCard(this, card); 
+		Card card = bot.getBotService().getSuitableCard(player.getCardsOnHand(), tableManager.getTable());
+		tableManager.discardedCard(player, card); 
 		return true;
 	}
 	

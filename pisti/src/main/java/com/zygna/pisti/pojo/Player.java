@@ -6,17 +6,17 @@ import java.util.List;
 
 public class Player {
 
-	private final Integer id;
-	protected final Table table;
+	private final long id;
 	private List<Card> cardsOnHand;
 	private int score;
 	private final boolean isADealer;
 	private int collectedCardsNo;
+	private final boolean smartPlayer;
 	
-	public Player(Integer id,Table table,boolean isADealer){
+	public Player(long id,boolean isADealer,boolean smartPlayer){
 		this.id=id;
-		this.table=table;
 		this.isADealer=isADealer;
+		this.smartPlayer=smartPlayer;
 		this.cardsOnHand = new ArrayList<Card>();
 	}
 
@@ -48,12 +48,12 @@ public class Player {
 		this.collectedCardsNo = collectedCardsNo;
 	}
 
-	public Integer getId() {
+	public long getId() {
 		return id;
 	}
 
-	public Table getTable() {
-		return table;
+	public boolean isSmartPlayer() {
+		return smartPlayer;
 	}
 	
 }

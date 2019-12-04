@@ -2,20 +2,27 @@ package com.zygna.pisti.bot;
 
 import java.util.List;
 
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.stereotype.Service;
+
 import com.zygna.pisti.enums.CardName;
 import com.zygna.pisti.pojo.Card;
+import com.zygna.pisti.pojo.Table;
 
+@Service
+@Qualifier("dummyBotService")
 public class DummyBotService implements BotService{
 
 	@Override
-	public Card getSuitableCard(List<Card> cardsOnHand,Card lastDiscardedCard) {
+	public Card getSuitableCard(List<Card> cardsOnHand,Table table) {
+
+		Card  lastDiscardedCard = table.getLastDiscardedCard();
 		
 		Card result=null;
 		
 		Card same=null;
 		Card jack=null;
 		Card minRank = null;
-		
 		
 		for(Card card:cardsOnHand){
 			

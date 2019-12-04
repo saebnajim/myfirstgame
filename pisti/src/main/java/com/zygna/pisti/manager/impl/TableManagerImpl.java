@@ -1,87 +1,54 @@
-package com.zygna.pisti.service.impl;
+package com.zygna.pisti.manager.impl;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Stack;
+import java.util.concurrent.ConcurrentHashMap;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.zygna.pisti.enums.CardName;
+import com.zygna.pisti.manager.TableManager;
 import com.zygna.pisti.pojo.Card;
-import com.zygna.pisti.pojo.Deck;
 import com.zygna.pisti.pojo.Player;
+import com.zygna.pisti.pojo.Table;
 import com.zygna.pisti.service.DealerService;
 import com.zygna.pisti.service.PlayerService;
 
-public class TableServiceImpl {
+public class TableManagerImpl implements TableManager {
 	
-	Logger logger = LoggerFactory.getLogger(TableServiceImpl.class);
+	Logger logger = LoggerFactory.getLogger(TableManagerImpl.class);
 
 	private List<PlayerService> playerServices;
-	private Deck deck;
-	private Stack<Card> pile;
-	private Card lastDiscardedCard;
-	private List<Card> firstFacingUpCards;
+
+	private Table table;
+	
 	private DealerService dealerService;
-	private int cardsEndupPlayers=0;
-
-	public TableServiceImpl(Deck deck) {
-		this.deck = deck;
-		this.pile = new Stack<>();
-		this.playerServices = new ArrayList<>();
-	}
-
-	public List<PlayerService> getPlayerServices() {
-		return playerServices;
-	}
-
-	public Deck getDeck() {
-		return deck;
-	}
-
-	public void setDeck(Deck deck) {
-		this.deck = deck;
-	}
-
-	public Stack<Card> getPile() {
-		return pile;
-	}
-
-	public void setPile(Stack<Card> pile) {
-		this.pile = pile;
-	}
-
-	public Card getLastDiscardedCard() {
-		return lastDiscardedCard;
-	}
-
-	public void setLastDiscardedCard(Card lastDiscardedCard) {
-		this.lastDiscardedCard = lastDiscardedCard;
-	}
-
-	public List<Card> getFirstFacingUpCards() {
-		return firstFacingUpCards;
+	
+	public TableManagerImpl(Table table) {
+		this.table=table;
+		this.playerServices = new ArrayList<PlayerService>();
 	}
 
 	public void setFirstFacingUpCards(List<Card> firstFacingUpCards) {
-		this.firstFacingUpCards = firstFacingUpCards;
+		table.setFirstFacingUpCards(firstFacingUpCards);
+		table.setLastDiscardedCard(firstFacingUpCards.get(3));
 	}
 
 	public void startGame() {
 
-		// Start as 2,1,4,3 location player to play
-
 		for(int i=0;i<4;i++){
-			PlayerService onRightPlayer = playerServices.get(0);
-			PlayerService onTopPlayer = playerServices.get(1);
-			PlayerService onLeftPlayer = playerServices.get(2);
-			PlayerService dealerPlayer = playerServices.get(3);
+			PlayerService rightPlayer = playerServices.get(0);
+			PlayerService nextPlayer = playerServices.get(1);
+			PlayerService leftPlayer = playerServices.get(2);
+			PlayerService dealer = playerServices.get(3);
 			
-			onRightPlayer.play();
-			onTopPlayer.play();
-			onLeftPlayer.play();
-			dealerPlayer.play();
+			rightPlayer.play();
+			nextPlayer.play();
+			leftPlayer.play();
+			dealer.play();
 		}
 
 	}
@@ -101,6 +68,7 @@ public class TableServiceImpl {
 		
 		if(playerServices.size()<4){
 			playerServices.add(playerService);
+			table.getPlayers().add(playerService.getPlayer());
 			if(playerService instanceof DealerService){
 				dealerService =(DealerService) playerService;
 			}
@@ -110,10 +78,26 @@ public class TableServiceImpl {
 	}
 	
 	
-	public void discardedCard(PlayerService playerService,Card card){
+	public void discardedCard(Player player,Card card){
+		
+		Stack<Card> pile = table.getPile();	
+		Card lastDiscardedCard = table.getLastDiscardedCard();
+		Integer cardsEndupPlayers = table.getCardsEndupPlayers();
 		
 		pile.push(card);
+		card.setFacingUp(true);
 		lastDiscardedCard = card;
+		
+		
+		Map<String,Integer> allPlayedCardsCounter = table.getAllPlayedCardsCounter();
+		String key = card.getCardName().toString();
+		if(allPlayedCardsCounter.containsKey(key)){
+			Integer count = allPlayedCardsCounter.get(key);
+			count++;
+			allPlayedCardsCounter.put(key, count);
+		} else {
+			allPlayedCardsCounter.put(key, 1);
+		}
 		
 		if(pile.size()==1){
 			return;
@@ -123,41 +107,46 @@ public class TableServiceImpl {
 		if(CardName.C_Jack.equals(card.getCardName())){
 
 			int pileSize = pile.size();
-			int totalScore = getPileScore();
+			int totalScore = getPileScore(pile);
 
 			// If the pile consists of just a single jack and you capture it with another jack, this counts as a double “pisti”, which is worth 20 points. 
 			if(pileSize==2 && CardName.C_Jack.equals(lastDiscardedCard.getCardName())){
 				totalScore += 20;
 			}
 			
-			playerService.addScore(totalScore);
-			playerService.addCollectedCards(pileSize);
-			this.lastDiscardedCard=null;
+			addScore(player,totalScore);
+			addCollectedCards(player,pileSize);
+			lastDiscardedCard=null;
 
 		} else if(lastDiscardedCard.equals(card)){
 			// If the rank of the played (discarded) card matches the rank of the last card on the pile, the player collects the whole pile.
 			int pileSize = pile.size();
-			int totalScore = getPileScore();
+			int totalScore = getPileScore(pile);
 			
 			//If the pile consists of just one card and the next player collects it by matching a card (not a jack), the collecting player scores a 10 point bonus for a “pisti”.
 			if(pile.size()==2){
 				totalScore += 10;
 			}
 			
-			playerService.addScore(totalScore);
-			playerService.addCollectedCards(pileSize);
-			this.lastDiscardedCard=null;
+			addScore(player,totalScore);
+			addCollectedCards(player,pileSize);
+			lastDiscardedCard=null;
 		} 
 
 		//If the played card is not equal to the top card of the pile, the played card is simply added to the top of the pile.
 		
-		if(playerService.getPlayer().getCardsOnHand().isEmpty()){
+		if(player.getCardsOnHand().isEmpty()){
 			cardsEndupPlayers++;
 		}
 		
+		 table.setPile(pile);	
+		 table.setLastDiscardedCard(lastDiscardedCard);
+		 table.setCardsEndupPlayers(cardsEndupPlayers);
+
 		if(cardsEndupPlayers==4){
-			if(deck.getCards().size()>0){
+			if(table.getDeck().getCards().size()>0){
 				cardsEndupPlayers=0;
+				table.setCardsEndupPlayers(cardsEndupPlayers);
 				dealerService.dealCardsToPlayers();
 			} else {
 				
@@ -173,13 +162,25 @@ public class TableServiceImpl {
 
 				hasMaxPlayer.addCollectedCards(3);
 				
-				endGame();
+				table.setAllPlayedCardsCounter(new ConcurrentHashMap<>());
+				
+				int gamesNo = table.getGamesNo()-1;
+				if(gamesNo==0) {
+					endGame();
+				} else {
+					table.setGamesNo(gamesNo);
+				}
 			}
 		}
 		
+
 	}
 	
-	private int getPileScore(){
+	public Table getTable() {
+		return table;
+	}
+
+	private int getPileScore(Stack<Card> pile){
 		
 		int totalScore = 0;
 		for(int i=0;i<pile.size();i++) {
@@ -190,6 +191,18 @@ public class TableServiceImpl {
 
 		return totalScore;
 		
+	}
+	
+	private void addScore(Player player, int totalScore) {
+		int score = player.getScore();
+		score += totalScore;
+		player.setScore(score);
+	}
+
+	private void addCollectedCards(Player player,int collectedCardsNo) {
+		int collectedCardsNoTmp = player.getCollectedCardsNo();
+		collectedCardsNoTmp += collectedCardsNo;
+		player.setCollectedCardsNo(collectedCardsNoTmp);
 	}
 
 }

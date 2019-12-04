@@ -8,26 +8,49 @@ import java.util.Stack;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.zygna.pisti.manager.TableManager;
 import com.zygna.pisti.pojo.Bot;
 import com.zygna.pisti.pojo.Card;
 import com.zygna.pisti.pojo.Deck;
 import com.zygna.pisti.pojo.Player;
 import com.zygna.pisti.pojo.Table;
 import com.zygna.pisti.service.DealerService;
+import com.zygna.pisti.utils.CardsUtil;
 
 public class DealerServiceImpl extends PlayerServiceImpl implements DealerService {
 
-	Logger logger = LoggerFactory.getLogger(Table.class);
+	Logger logger = LoggerFactory.getLogger(DealerServiceImpl.class);
  
-	public DealerServiceImpl(Player player,Table table,Bot bot){
-		super(player, table, bot);
+	public DealerServiceImpl(Player player,TableManager tableManager,Bot bot){
+		super(player, tableManager, bot);
 	}
 
 	@Override
-	public void startGame() {
+	public void startGames(int gamesNo) {
+		
+		Table table = tableManager.getTable();
+		List<Player> players = table.getPlayers();
+		for(int k=1;k<=gamesNo;k++) {
+
+			logger.info("{} game is started , players ({} , {} , {} , {})",k,players.get(0).getId(),players.get(1).getId(),players.get(2).getId(),players.get(3).getId());
+			
+			Stack<Card> orderedCards = CardsUtil.getOrderedCards();
+			
+			Deck deck = new Deck(orderedCards);
+			table.setDeck(deck);
+			table.setPile(new Stack<>());
+			table.setCardsEndupPlayers(0);
+
+			this.startGame();
+		}
+	}
+	
+	private void startGame() {
+		
+		Table table = tableManager.getTable();
 		
 		Deck deck = table.getDeck();
-		
+
 		// Shuffle the deck
 		Stack<Card> cards = deck.getCards();
 		Collections.shuffle(cards);
@@ -48,13 +71,11 @@ public class DealerServiceImpl extends PlayerServiceImpl implements DealerServic
 	@Override
 	public void dealCardsToPlayers() {
 		
+		Table table = tableManager.getTable();
 		Deck deck = table.getDeck();
 		
-		logger.info("Cards Size : {}",deck.getCards().size());
-		
 		if(deck.getCards().size()>0){
-			table.getPlayerServices().forEach(ps->{
-				Player p = ps.getPlayer();
+			table.getPlayers().forEach(p->{
 				List<Card> cardsOnHand = new ArrayList<>();
 				Stack<Card> cards = deck.getCards();
 				for(int i=0;i<4;i++){
@@ -64,7 +85,9 @@ public class DealerServiceImpl extends PlayerServiceImpl implements DealerServic
 				p.setCardsOnHand(cardsOnHand);
 			});
 			
-			table.startGame();
+			
+
+			tableManager.startGame();
 			
 		}
 	}
